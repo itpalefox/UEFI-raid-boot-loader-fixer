@@ -93,7 +93,7 @@ if %stage%==3 goto 3
 echo.
 echo ======  START DISKPART AT STAGE 1  ======
 diskpart /s %TMP%\stage1.ini > %TMP%\stage1.rep
-rem Check that disks is convert to dynamic
+rem Check that disks is successfully created partitions
 type %TMP%\stage1.rep | findstr /C:"error" > %tmp%\stage1_dsp.rep
 findstr /C:"error" "%tmp%\stage1_dsp.rep"
 if %errorlevel% NEQ 1 (
