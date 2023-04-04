@@ -93,6 +93,19 @@ if %stage%==3 goto 3
 echo.
 echo ======  START DISKPART AT STAGE 1  ======
 diskpart /s %TMP%\stage1.ini > %TMP%\stage1.rep
+rem Check that disks is convert to dynamic
+type %TMP%\stage1.rep | findstr /C:"error" > %tmp%\stage1_dsp.rep
+findstr /C:"error" "%tmp%\stage1_dsp.rep"
+if %errorlevel% NEQ 1 (
+echo.
+echo =====^> DISKPART FAIL - For more detail please check %TMP%\stage1.rep
+goto no
+) else ( 
+echo.
+echo =====^> DISKPART DONE
+goto 1.2
+)
+:1.2
 echo =====^> DONE
 echo =====^> You need to REBOOT the server !
 set reboot=y
@@ -104,6 +117,19 @@ goto :EOF
 echo.
 echo ======  START DISKPART AT STAGE 2  ======
 diskpart /s %TMP%\stage2.ini > %TMP%\stage2.rep
+rem Check that disks is convert to dynamic
+type %TMP%\stage2.rep | findstr /C:"error" > %tmp%\stage2_dsp.rep
+findstr /C:"error" "%tmp%\stage2_dsp.rep"
+if %errorlevel% NEQ 1 (
+echo.
+echo =====^> DISKPART FAIL - For more detail please check %TMP%\stage2.rep
+goto no
+) else ( 
+echo.
+echo =====^> DISKPART DONE
+goto 2.2
+)
+:2.2
 P:
 cd EFI\Microsoft\Boot
 bcdedit /copy {bootmgr} /d "Windows Boot Manager 2" > %TMP%\stage2_1.rep
