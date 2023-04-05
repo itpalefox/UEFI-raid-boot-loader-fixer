@@ -45,10 +45,10 @@ echo convert gpt >> %TMP%\stage1.ini
 echo select part 1 >> %TMP%\stage1.ini
 echo delete part override >> %TMP%\stage1.ini
 rem == Windows RE tools partition ==
-echo create partition primary size=300 >> %TMP%\stage1.ini
-echo format quick fs=ntfs >> %TMP%\stage1.ini
-echo set id="de94bba4-06d1-4d40-a16a-bfd50179d6ac" >> %TMP%\stage1.ini
-echo gpt attributes=0x8000000000000001 >> %TMP%\stage1.ini
+rem echo create partition primary size=300 >> %TMP%\stage1.ini
+rem echo format quick fs=ntfs >> %TMP%\stage1.ini
+rem echo set id="de94bba4-06d1-4d40-a16a-bfd50179d6ac" >> %TMP%\stage1.ini
+rem echo gpt attributes=0x8000000000000001 >> %TMP%\stage1.ini
 rem == System partition ==
 echo create partition efi size=100 >> %TMP%\stage1.ini
 echo format quick fs=fat32 >> %TMP%\stage1.ini
@@ -66,7 +66,7 @@ echo sel disk %diskos% >> %TMP%\stage2.ini
 echo sel par %partn% >> %TMP%\stage2.ini
 echo assign letter=P >> %TMP%\stage2.ini
 echo sel disk %adddiskn% >> %TMP%\stage2.ini
-echo sel par 2 >> %TMP%\stage2.ini
+echo sel par 1 >> %TMP%\stage2.ini
 echo assign letter=S >> %TMP%\stage2.ini
 rem == Delete partition letters ==
 echo sel vol p > %TMP%\stage3.ini
