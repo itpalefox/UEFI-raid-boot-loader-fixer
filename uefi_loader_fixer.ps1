@@ -14,6 +14,7 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 				Write-Host  " ===================================================================="
 				Write-Host  " ==================  UEFI BOOT Fixer FOR RAID 1 ====================="
 				Write-Host  " ===================================================================="
+				if (-not(Test-Path -Path $env:LOCALAPPDATA\Temp\stage.v -PathType Leaf)) {
 				Write-Host "Choose Disk with UEFI boot partition from the list given below:"
 				Write-Host ""
 				Write-Host -nonewline "[ DISK"$diska" ]"; Write-Host ""
@@ -22,8 +23,10 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 				(echo "select disk $diskb `nlist part") -join '' | diskpart |  Where-Object {$_ -match "\d\d " -and $_ -notmatch "###"}
 				Write-Host ""
 				[string]$diskos = Read-Host -Prompt "Disk number with OS [0/1]"
-				[string]$partn = Read-Host -Prompt "System partition number(100+ MB) [1/4]"
-				[string]$adddiskn = Read-Host -Prompt "Disk number to add in RAID [0/1]"	
+				$partn=((((echo "select disk $diskos `nlist part") -join '' | diskpart |  Where-Object {$_ -match "System" -or $_ -match "100" -and $_ -notmatch "###"}) -Split "\s+")[2]) -Join ''
+				if (($partn) -eq $null) { [string]$partn = Read-Host -Prompt "System partition number(100+ MB) [1/4]" }
+				[string]$adddiskn = Read-Host -Prompt "Disk number to add in RAID [0/1]"
+				Set-Content -Path $env:LOCALAPPDATA\Temp\stage.v -Value $diskos","$partn","$adddiskn }
 				Write-Host ""
 				Write-Host  " ===================================================================="
 				Write-Host  " |		   						    |"
@@ -64,8 +67,9 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 						  } Until ($Valid)
 						}
 					{"2" -contains $_} {
+						$con=Get-Content -Path $env:LOCALAPPDATA\Temp\stage.v
 						Write-Host "======  START DISKPART AT STAGE 2  ======"
-						(echo "sel disk $diskos `nconvert dynamic`nsel disk $adddiskn `nconvert dynamic`nsel vol c`nadd disk $adddiskn `nsel disk $diskos `nsel part $partn `nassign letter=P`nsel disk $adddiskn `nsel part 1`nassign letter=S") -join '' | diskpart
+						(echo "sel disk "$con[0]" `nconvert dynamic`nsel disk "$con[4]" `nconvert dynamic`nsel vol c`nadd disk "$con[4]" `nsel disk "$con[0]" `nsel part "$con[2]" `nassign letter=P`nsel disk "$con[4]" `nsel part 1`nassign letter=S") -join '' ###| diskpart
 						Write-Host "=====^> DISKPART DONE"
 						# == Copy EFI files ==
 						P:
