@@ -1,15 +1,16 @@
+# Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ## 
 ##    UEFI raid 1 boot loader fixer
 ##
 ##   All rights reserved https://github.com/itpalefox
-#(echo "list disk" | diskpart | Foreach {"$(($_ -split '\s+',4)[0..2])"} | Select-String -Pattern "Диск" |  Select-String -Pattern "###" -Notmatch).Matches.Length
-$test=(echo "list disk" | diskpart | Where-Object {$_ -match "\d\d " -and $_ -notmatch "###"} | % {$_ -replace ("\s+", " ")} | Foreach {"$(($_ -split ' ')[2,5])"}).Split()
-For ($i=1; $i -lt $test.Length; $i+=2) {
-		For ($j=$i+2; $j -lt $test.Length; $j+=2) {
-			if ($test[$i] -eq $test[$j])
+
+$raid=(echo "list disk" | diskpart | Where-Object {$_ -match "\d\d " -and $_ -notmatch "###"} | % {$_ -replace ("\s+", " ")} | Foreach {"$(($_ -split ' ')[2,5])"}).Split()
+For ($i=1; $i -lt $raid.Length; $i+=2) {
+		For ($j=$i+2; $j -lt $raid.Length; $j+=2) {
+			if ($raid[$i] -eq $raid[$j])
 			{ 	
-				$diska=$test[$i-1]
-				$diskb=$test[$j-1]
+				$diska=$raid[$i-1]
+				$diskb=$raid[$j-1]
 				Write-Host ""
 				Write-Host  " ===================================================================="
 				Write-Host  " ==================  UEFI BOOT Fixer FOR RAID 1 ====================="
@@ -23,10 +24,11 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 				(echo "select disk $diskb `nlist part") -join '' | diskpart |  Where-Object {$_ -match "\d\d " -and $_ -notmatch "###"}
 				Write-Host ""
 				[string]$diskos = Read-Host -Prompt "Disk number with OS [0/1]"
-				$partn=((((echo "select disk $diskos `nlist part") -join '' | diskpart |  Where-Object {$_ -match "System" -or $_ -match "100" -and $_ -notmatch "###"}) -Split "\s+")[2]) -Join ''
+				$partn=((((echo "select disk $diskos `nlist part") -join '' | diskpart |  Where-Object {$_ -match "System" -or $_ -match " 99 | 100 " -and $_ -notmatch "###"}) -Split "\s+")[2]) -Join ''
 				if (($partn) -eq $null) { [string]$partn = Read-Host -Prompt "System partition number(100+ MB) [1/4]" }
 				[string]$adddiskn = Read-Host -Prompt "Disk number to add in RAID [0/1]"
 				Set-Content -Path $env:LOCALAPPDATA\Temp\stage.v -Value $diskos","$partn","$adddiskn }
+				$con=Get-Content -Path $env:LOCALAPPDATA\Temp\stage.v
 				Write-Host ""
 				Write-Host  " ===================================================================="
 				Write-Host  " |		   						    |"
@@ -43,20 +45,25 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 					[string]$stage = Read-Host -Prompt "What stage are we starting?"
 					Switch ($stage) {
 					{"1" -contains $_} {
+						$systemsize=((((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match "System" -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
 						Write-Host "======  START DISKPART AT STAGE 1  ======"
-						(echo "select disk $adddiskn `nclean`nconvert gpt`nselect part 1`ndelete part override`ncreate part efi size=100`nformat quick fs=fat32`ncreate part msr size=16") -join '' | diskpart
+						(echo "select disk "$con[4]" `nclean`nconvert gpt`nselect part 1`ndelete part override") -join '' | diskpart
+						if (($con[2]) -ne "1") {
+							$resize=((((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match "Recovery" -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
+							(echo "select disk "$con[4]" `ncreate partition primary size=$resize`nformat quick fs=ntfs`nset id=`"de94bba4-06d1-4d40-a16a-bfd50179d6ac`"`ngpt attributes=0x8000000000000001") -join '' | diskpart
+						} 
+						(echo "select disk "$con[4]" `ncreate part efi size=$systemsize`nformat quick fs=fat32`ncreate part msr size=16") -join '' | diskpart
 						Write-Host "=====^> DISKPART DONE"
 						Do {
 							$rbValid = $True
 							[string]$rb = Read-Host -Prompt "^/^> REBOOT the server now? [y/n]"
 							Switch ($rb) {
 							{"y","Y","Yes","yes" -contains $_} {
-								echo "IN Yes reboot"
 								Restart-Computer localhost -force
 								Exit
 								}
 							{"n","N","No","no" -contains $_} {
-								echo "IN NO reboot"
+								echo "EXIT Without Reboot"
 								Exit
 								}
 							default {
@@ -67,9 +74,8 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 						  } Until ($Valid)
 						}
 					{"2" -contains $_} {
-						$con=Get-Content -Path $env:LOCALAPPDATA\Temp\stage.v
 						Write-Host "======  START DISKPART AT STAGE 2  ======"
-						(echo "sel disk "$con[0]" `nconvert dynamic`nsel disk "$con[4]" `nconvert dynamic`nsel vol c`nadd disk "$con[4]" `nsel disk "$con[0]" `nsel part "$con[2]" `nassign letter=P`nsel disk "$con[4]" `nsel part 1`nassign letter=S") -join '' ###| diskpart
+						(echo "sel disk "$con[0]" `nconvert dynamic`nsel disk "$con[4]" `nconvert dynamic`nsel vol c`nadd disk "$con[4]" `nsel disk "$con[0]" `nsel part "$con[2]" `nassign letter=P`nsel disk "$con[4]" `nsel part "$con[2]" `nassign letter=S") -join '' | diskpart
 						Write-Host "=====^> DISKPART DONE"
 						# == Copy EFI files ==
 						P:
@@ -83,8 +89,16 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 						Write-Host "=====^> DISKPART DONE"
 						# == Delete partition letters ==
 						Write-Host "======  START DISKPART AT STAGE 3  ======"
-						(echo "sel vol p`nremove`nsel vol s`nremove") -join '' | diskpart
+							if (($con[2]) -ne "1") {
+								Write-Host "======  START DISKPART AT STAGE 3.1  ======"
+								(echo "sel disk "$con[0]" `nsel part 1 `nassign letter=R`nsel disk "$con[4]" `nsel part 1`nassign letter=T") -join '' | diskpart
+								robocopy R:\ T:\ /E /R:0
+								(echo "sel vol P`nremove`nsel vol S`nremove`nsel vol R`nremove`nsel vol T`nremove") -join '' | diskpart
+							} else { 
+								(echo "sel vol P`nremove`nsel vol S`nremove") -join '' | diskpart 
+							}
 						Write-Host "=====^> DISKPART DONE"
+						Remove-Item $env:LOCALAPPDATA\Temp\stage.v -Force
 						}
 					default {
 						Write-Host "Stage have not a valid entry"
@@ -97,4 +111,4 @@ For ($i=1; $i -lt $test.Length; $i+=2) {
 			
 		}
     }
-#((Get-Content "$($env:temp)\sda.rep" | select-string "System") -Split "\s+")[2]
+	#Set-PSDebug -Trace 2; 

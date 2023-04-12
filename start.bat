@@ -1,0 +1,1 @@
+PowerShell.exe -ExecutionPolicy UnRestricted -File .\uefi_loader_fixer.ps1
