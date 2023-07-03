@@ -39,6 +39,7 @@ For ($i=1; $i -lt $raid.Length; $i+=2) {
 				Write-Host  " Choose STAGE from the list given below:"
 				Write-Host  " [1] STAGE 1 - Create partitions"
 				Write-Host  " [2] STAGE 2 - Add second disk to mirror and copy boot loader"
+				Write-Host  " [3] Reassign Disks"
 				$chkerror=" "
 				function ErChk {
 					param (
@@ -126,6 +127,12 @@ For ($i=1; $i -lt $raid.Length; $i+=2) {
 						Write-Host " ======^> DISKPART DONE"
 						Remove-Item $env:LOCALAPPDATA\Temp\stage.v -Force
 						Remove-Item $env:LOCALAPPDATA\Temp\ds_stage* -Force
+						}
+						{"3" -contains $_} {
+							Remove-Item $env:LOCALAPPDATA\Temp\stage.v -Force
+							Remove-Item $env:LOCALAPPDATA\Temp\ds_stage* -Force
+							Write-Host " ======^> REASSIGN DISK DONE"
+							Write-Host " ======^> Please Run Script again! "
 						}
 					default {
 						Write-Warning "		Stage have not a valid entry"
