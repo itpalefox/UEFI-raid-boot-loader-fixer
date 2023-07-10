@@ -113,13 +113,6 @@ For ($i=1; $i -lt $raid.Length; $i+=2) {
 								robocopy R:\ T:\ /E /R:0
 								$chkerror=("sel vol P`nremove`nsel vol S`nremove`nsel vol R`nremove`nsel vol T`nremove") -join '' | diskpart
 								ErChk -Diskparts $chkerror -FileName 'ds_stage3_2'
-							#} elseif (((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match "Recovery" -and $_ -notmatch "###"}) -ne $null) {
-							#	$resize=((((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match "Recovery" -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
-							#	$chkerror=(echo "select disk "$con[4]" `ncreate partition primary size=$resize`nformat quick fs=ntfs`nset id=`"de94bba4-06d1-4d40-a16a-bfd50179d6ac`"`ngpt attributes=0x8000000000000001") -join '' | diskpart
-							#	ErChk -Diskparts $chkerror -FileName 'ds_stage3_3'
-							#	(echo "sel disk "$con[0]" `nsel part 4 `nassign letter=R`nsel disk "$con[4]" `nsel part 4`nassign letter=T") -join '' | diskpart
-							#	robocopy R:\ T:\ /E /R:0
-							#	("sel vol P`nremove`nsel vol S`nremove`nsel vol R`nremove`nsel vol T`nremove") -join '' | diskpart
 							} else {
 								$chkerror=("sel vol P`nremove`nsel vol S`nremove") -join '' | diskpart
 								ErChk -Diskparts $chkerror -FileName 'ds_stage3'
@@ -145,4 +138,3 @@ For ($i=1; $i -lt $raid.Length; $i+=2) {
 			
 		}
     }
-	#Set-PSDebug -Trace 2; 
