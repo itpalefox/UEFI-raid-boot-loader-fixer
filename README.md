@@ -3,6 +3,7 @@ The script is designed to automatically install the bootloader on the second dis
 
 ### Attention !!!: Do not launch by double clicking on the script. The script is recommended to run in cmd as administrator.
 
+### If the security policy does not allow you to run the powershell script, run it through the start.bat
 
 
 ### Exemple stage 1:
