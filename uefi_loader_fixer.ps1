@@ -3,7 +3,9 @@
 ##
 ##   All rights reserved https://github.com/itpalefox
 
-$raid=("list disk" | diskpart | Where-Object {$_ -match "\d\d " -and $_ -notmatch "###"} | % {$_ -replace ("\s+", " ")} | Foreach {"$(($_ -split ' ')[2,4])"}).Split()
+$diskosid=(((("select  volume=c`ndetail volume") -join '' | diskpart |  Where-Object {$_ -match " Disk " -and $_ -notmatch "###"}) -Split "\s+")[2]) -Join ''
+$diskossize=(((("select  volume=c`ndetail volume") -join '' | diskpart |  Where-Object {$_ -match " Disk " -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
+$raid=("list disk" | diskpart | Where-Object {$_ -match "$diskossize " -and $_ -notmatch "###"} | % {$_ -replace ("\s+", " ")} | Foreach {"$(($_ -split ' ')[2,4])"}).Split()
 if ($raid.Length -lt "4") { Write-Warning "		Can't find disk with same space "}
 For ($i=1; $i -lt $raid.Length; $i+=2) {
 		For ($j=$i+2; $j -lt $raid.Length; $j+=2) {
