@@ -12,9 +12,9 @@ Switch ($oslang) {
 		$lgrecpart="Recovery"
 	}
 	{"ru" -contains $_} {
-		$lgdisk=" Р”РёСЃРє "
-		$lgsyspart="РЎРёСЃС‚РµРјРЅС‹Р№"
-		$lgrecpart="Р’РѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ"
+		$lgdisk=" Диск "
+		$lgsyspart="Системный"
+		$lgrecpart="Восстановление"
 	}
 	Default {
         Write-Warning "		======  ERROR: Can't get Windows language!!! ======"
