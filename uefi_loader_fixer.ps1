@@ -4,7 +4,7 @@
 ##   All rights reserved https://github.com/itpalefox
 ##
 
-$oslang=(((Get-WinSystemLocale).Name) -Split "-")[0]
+$oslang=(((Get-UICulture).Name) -Split "-")[0]
 Switch ($oslang) {
 	{"en" -contains $_} {
 		$lgdisk=" Disk "
