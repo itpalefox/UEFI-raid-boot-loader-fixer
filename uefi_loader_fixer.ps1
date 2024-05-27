@@ -1,9 +1,28 @@
 ## 
-##    UEFI raid 1 boot loader fixer
+##    UEFI raid 1 boot loader fixer (version: 1.0.2.2)
 ##
 ##   All rights reserved https://github.com/itpalefox
+##
 
-$diskossize=(((("select  volume=c`ndetail volume") -join '' | diskpart |  Where-Object {$_ -match " Disk " -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
+$oslang=(((Get-UICulture).Name) -Split "-")[0]
+Switch ($oslang) {
+	{"en" -contains $_} {
+		$lgdisk=" Disk "
+		$lgsyspart="System"
+		$lgrecpart="Recovery"
+	}
+	{"ru" -contains $_} {
+		$lgdisk=" Диск "
+		$lgsyspart="Системный"
+		$lgrecpart="Восстановление"
+	}
+	Default {
+        Write-Warning "		======  ERROR: Can't get Windows language!!! ======"
+		break
+    }
+}
+
+$diskossize=(((("select  volume=c`ndetail volume") -join '' | diskpart |  Where-Object {$_ -match $lgdisk -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
 $raid=("list disk" | diskpart | Where-Object {$_ -match "$diskossize " -and $_ -notmatch "###"} | % {$_ -replace ("\s+", " ")} | Foreach {"$(($_ -split ' ')[2,4])"}).Split()
 if ($raid.Length -lt "4") { Write-Warning "		Can't find disk with same space "}
 For ($i=1; $i -lt $raid.Length; $i+=2) {
@@ -25,7 +44,7 @@ For ($i=1; $i -lt $raid.Length; $i+=2) {
 				("select disk $diskb `nlist part") -join '' | diskpart |  Where-Object {$_ -match "\d\d " -and $_ -notmatch "###"}
 				Write-Host ""
 				[string]$diskos = Read-Host -Prompt " Disk number with OS [0/1]"
-				$partn=(((("select disk $diskos `nlist part") -join '' | diskpart |  Where-Object {$_ -match "System" -or $_ -match " 99 | 100 " -and $_ -notmatch "###"}) -Split "\s+")[2]) -Join ''
+				$partn=(((("select disk $diskos `nlist part") -join '' | diskpart |  Where-Object {$_ -match $lgsyspart -or $_ -match " 99 | 100 " -and $_ -notmatch "###"}) -Split "\s+")[2]) -Join ''
 				if (($partn) -eq $null) { [string]$partn = Read-Host -Prompt "System partition number(100+ MB) [1/4]" }
 				[string]$adddiskn = Read-Host -Prompt " Disk number to add in RAID [0/1]"
 				Set-Content -Path $env:LOCALAPPDATA\Temp\stage.v -Value $diskos","$partn","$adddiskn }
@@ -59,12 +78,12 @@ For ($i=1; $i -lt $raid.Length; $i+=2) {
 					[string]$stage = Read-Host -Prompt " What stage are we starting?"
 					Switch ($stage) {
 					{"1" -contains $_} {
-						$systemsize=((((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match "System" -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
+						$systemsize=((((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match $lgsyspart -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
 						Write-Host " ======  START DISKPART AT STAGE 1  ======"
 						$chkerror=(echo "select disk "$con[4]" `nclean`nconvert gpt`nselect part 1`ndelete part override") -join '' | diskpart
 						ErChk -Diskparts $chkerror -FileName 'ds_stage1'
 						if (($con[2]) -ne "1") {
-							$resize=((((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match "Recovery" -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
+							$resize=((((echo "select disk "$con[0]" `nlist part") -join '' | diskpart |  Where-Object {$_ -match $lgrecpart -and $_ -notmatch "###"}) -Split "\s+")[4]) -Join ''
 							$chkerror=(echo "select disk "$con[4]" `ncreate partition primary size=$resize`nformat quick fs=ntfs`nset id=`"de94bba4-06d1-4d40-a16a-bfd50179d6ac`"`ngpt attributes=0x8000000000000001") -join '' | diskpart
 							ErChk -Diskparts $chkerror -FileName 'ds_stage1_1'
 						} 
@@ -122,12 +141,12 @@ For ($i=1; $i -lt $raid.Length; $i+=2) {
 						Remove-Item $env:LOCALAPPDATA\Temp\stage.v -Force
 						Remove-Item $env:LOCALAPPDATA\Temp\ds_stage* -Force
 						}
-						{"3" -contains $_} {
-							Remove-Item $env:LOCALAPPDATA\Temp\stage.v -Force
-							Remove-Item $env:LOCALAPPDATA\Temp\ds_stage* -Force
-							Write-Host " ======^> REASSIGN DISK DONE"
-							Write-Host " ======^> Please Run Script again! "
-						}
+					{"3" -contains $_} {
+						Remove-Item $env:LOCALAPPDATA\Temp\stage.v -Force
+						Remove-Item $env:LOCALAPPDATA\Temp\ds_stage* -Force
+						Write-Host " ======^> REASSIGN DISK DONE"
+						Write-Host " ======^> Please Run Script again! "
+					}
 					default {
 						Write-Warning "		Stage have not a valid entry"
 						$Valid = $False
